@@ -18,5 +18,5 @@ def test_root_endpoint() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["phase"] == "fase 3"
-    assert body["status"] == "feedback de usuario e recomendador hibrido prontos"
+    assert body["domain"] == "movies"
+    assert body["status"] == "api e recomendador hibrido prontos"

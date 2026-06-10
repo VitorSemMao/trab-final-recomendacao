@@ -27,4 +27,4 @@ Se o dataset ainda nao estiver presente, a aplicacao usa um catalogo pequeno int
 
 - As preferencias do usuario ajudam a montar o perfil inicial.
 - As notas recebidas em `POST /users/{user_id}/ratings` alimentam a parte colaborativa do ranking.
-- Itens ja avaliados pelo proprio usuario sao removidos das recomendacoes para evitar repeticao.
+- Filmes ja avaliados pelo proprio usuario sao removidos das recomendacoes para evitar repeticao.

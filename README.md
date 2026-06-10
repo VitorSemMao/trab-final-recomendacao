@@ -1,6 +1,6 @@
 # Sistema de Recomendacao de Filmes com FastAPI
 
-API REST para cadastro de usuarios e itens, coleta de preferencias e notas, e geracao de recomendacoes personalizadas de filmes.
+API REST para cadastro de usuarios e filmes, coleta de preferencias e notas, e geracao de recomendacoes personalizadas.
 
 O projeto foi desenvolvido como trabalho academico de sistema de recomendacao e utiliza o dataset [MovieLens 100K](https://grouplens.org/datasets/movielens/100k/) quando disponivel. Caso o dataset nao esteja presente localmente, a aplicacao continua operando com um catalogo reduzido de fallback para facilitar demonstracoes e testes.
 
@@ -8,7 +8,7 @@ O projeto foi desenvolvido como trabalho academico de sistema de recomendacao e 
 
 - API REST em FastAPI com documentacao automatica em `/docs` e `/redoc`.
 - Recomendacao hibrida baseada em perfil de conteudo e similaridade entre usuarios.
-- Suporte a cadastro de usuarios, cadastro de itens, atualizacao de preferencias, registro de notas e consulta de recomendacoes.
+- Suporte a cadastro de usuarios, cadastro de filmes, atualizacao de preferencias, registro de notas e consulta de recomendacoes.
 - Execucao local ou via Docker com download automatizado do MovieLens 100K.
 - Suite de testes cobrindo saude da API e comportamento do motor de recomendacao.
 
@@ -36,8 +36,8 @@ Dataset loader (app/dataset.py)
 
 O motor atual combina dois sinais:
 
-1. Conteudo: usa as preferencias informadas pelo usuario e as tags dos itens ja avaliados para montar um perfil de interesse.
-2. Colaborativo: usa similaridade cosseno entre usuarios com itens em comum para reforcar filmes bem avaliados por perfis parecidos.
+1. Conteudo: usa as preferencias informadas pelo usuario e as tags dos filmes ja avaliados para montar um perfil de interesse.
+2. Colaborativo: usa similaridade cosseno entre usuarios com filmes em comum para reforcar filmes bem avaliados por perfis parecidos.
 
 O score final hoje segue a proporcao implementada em `app/service.py`:
 
@@ -47,7 +47,7 @@ score_final = (content_score * 0.7) + (collaborative_score * 0.3)
 
 Regras importantes da implementacao atual:
 
-- itens ja avaliados pelo usuario nao aparecem nas recomendacoes;
+- filmes ja avaliados pelo usuario nao aparecem nas recomendacoes;
 - notas podem variar de `0` a `5`;
 - sem dataset local, a API sobe com um pequeno catalogo de exemplo;
 - os dados de usuarios e avaliacoes ficam em memoria nesta fase do projeto.
@@ -130,11 +130,11 @@ No fluxo com Docker, o volume `./data` e montado dentro do container e a inicial
 | --- | --- | --- |
 | `GET` | `/` | Retorna metadados simples sobre a fase atual do projeto |
 | `GET` | `/health` | Verifica se a API esta respondendo |
-| `GET` | `/dataset` | Informa a origem do catalogo e quantidades carregadas |
+| `GET` | `/dataset` | Informa a origem do catalogo, o total de filmes e usuarios registrados |
 | `POST` | `/users` | Cria um usuario com nome e preferencias opcionais |
 | `PUT` | `/users/{user_id}/preferences` | Atualiza as preferencias do usuario |
-| `POST` | `/items` | Adiciona um item manualmente ao catalogo |
-| `POST` | `/users/{user_id}/ratings` | Registra ou atualiza a nota de um item |
+| `POST` | `/movies` | Adiciona um filme manualmente ao catalogo |
+| `POST` | `/users/{user_id}/ratings` | Registra ou atualiza a nota de um filme |
 | `GET` | `/users/{user_id}/recommendations?limit=5` | Retorna recomendacoes personalizadas |
 
 ## Exemplos de uso
@@ -147,12 +147,12 @@ curl -X POST http://localhost:8000/users \
   -d "{\"name\": \"Vitor\", \"preferences\": [\"Sci-Fi\", \"Action\"]}"
 ```
 
-### Avaliar um item
+### Avaliar um filme
 
 ```bash
 curl -X POST http://localhost:8000/users/1/ratings \
   -H "Content-Type: application/json" \
-  -d "{\"item_id\": 50, \"rating\": 5}"
+  -d "{\"movie_id\": 50, \"rating\": 5}"
 ```
 
 ### Buscar recomendacoes

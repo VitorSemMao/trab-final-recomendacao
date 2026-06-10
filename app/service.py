@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from math import sqrt
 
-from .dataset import CatalogItem, dedupe_preserve_order, load_catalog, normalize_text
+from .dataset import MovieRecord, dedupe_preserve_order, load_movie_catalog, normalize_text
 
 
 TAG_ALIASES = {
@@ -53,23 +53,23 @@ class UserRecord:
 
 @dataclass(slots=True)
 class RecommendationResult:
-    item: CatalogItem
+    movie: MovieRecord
     score: float
 
 
 class RecommendationService:
-    def __init__(self, catalog: list[CatalogItem] | None = None) -> None:
+    def __init__(self, catalog: list[MovieRecord] | None = None) -> None:
         if catalog is None:
-            loaded_catalog, dataset_source = load_catalog()
+            loaded_catalog, dataset_source = load_movie_catalog()
         else:
             loaded_catalog = list(catalog)
             dataset_source = "custom catalog"
 
-        self.items: dict[int, CatalogItem] = {item.item_id: item for item in loaded_catalog}
+        self.movies: dict[int, MovieRecord] = {movie.movie_id: movie for movie in loaded_catalog}
         self.dataset_source = dataset_source
         self.users: dict[int, UserRecord] = {}
         self.next_user_id = 1
-        self.next_item_id = max(self.items, default=0) + 1
+        self.next_movie_id = max(self.movies, default=0) + 1
 
     def create_user(self, name: str, preferences: list[str] | None = None) -> UserRecord:
         cleaned_preferences = dedupe_preserve_order(preferences or [])
@@ -78,51 +78,51 @@ class RecommendationService:
         self.next_user_id += 1
         return user
 
-    def create_item(self, title: str, tags: list[str] | None = None) -> CatalogItem:
+    def create_movie(self, title: str, tags: list[str] | None = None) -> MovieRecord:
         cleaned_tags = dedupe_preserve_order(tags or [])
-        item = CatalogItem(item_id=self.next_item_id, title=title.strip(), tags=cleaned_tags)
-        self.items[item.item_id] = item
-        self.next_item_id += 1
-        return item
+        movie = MovieRecord(movie_id=self.next_movie_id, title=title.strip(), tags=cleaned_tags)
+        self.movies[movie.movie_id] = movie
+        self.next_movie_id += 1
+        return movie
 
     def update_preferences(self, user_id: int, preferences: list[str]) -> UserRecord:
         user = self._get_user(user_id)
         user.preferences = dedupe_preserve_order(preferences)
         return user
 
-    def rate_item(self, user_id: int, item_id: int, rating: float) -> tuple[UserRecord, CatalogItem]:
+    def rate_movie(self, user_id: int, movie_id: int, rating: float) -> tuple[UserRecord, MovieRecord]:
         user = self._get_user(user_id)
-        item = self._get_item(item_id)
+        movie = self._get_movie(movie_id)
 
-        previous_rating = user.ratings.get(item_id)
+        previous_rating = user.ratings.get(movie_id)
         if previous_rating is None:
-            item.rating_count += 1
-            item.rating_total += rating
+            movie.rating_count += 1
+            movie.rating_total += rating
         else:
-            item.rating_total += rating - previous_rating
+            movie.rating_total += rating - previous_rating
 
-        item.average_rating = item.rating_total / item.rating_count if item.rating_count else 0.0
-        user.ratings[item_id] = rating
-        return user, item
+        movie.average_rating = movie.rating_total / movie.rating_count if movie.rating_count else 0.0
+        user.ratings[movie_id] = rating
+        return user, movie
 
     def recommend_for_user(self, user_id: int, limit: int = 5) -> list[RecommendationResult]:
         user = self._get_user(user_id)
         profile_weights = self._build_profile_weights(user)
 
         recommendations: list[RecommendationResult] = []
-        for item in self.items.values():
-            if item.item_id in user.ratings:
+        for movie in self.movies.values():
+            if movie.movie_id in user.ratings:
                 continue
-            content_score = self._content_score(item, profile_weights)
-            collaborative_score = self._collaborative_score(user, item.item_id)
+            content_score = self._content_score(movie, profile_weights)
+            collaborative_score = self._collaborative_score(user, movie.movie_id)
             score = (content_score * 0.7) + (collaborative_score * 0.3)
-            recommendations.append(RecommendationResult(item=item, score=score))
+            recommendations.append(RecommendationResult(movie=movie, score=score))
 
         recommendations.sort(
             key=lambda result: (
                 -result.score,
-                normalize_text(result.item.title),
-                result.item.item_id,
+                normalize_text(result.movie.title),
+                result.movie.movie_id,
             )
         )
         return recommendations[:limit]
@@ -133,11 +133,11 @@ class RecommendationService:
             raise KeyError(f"User {user_id} not found")
         return user
 
-    def _get_item(self, item_id: int) -> CatalogItem:
-        item = self.items.get(item_id)
-        if item is None:
-            raise KeyError(f"Item {item_id} not found")
-        return item
+    def _get_movie(self, movie_id: int) -> MovieRecord:
+        movie = self.movies.get(movie_id)
+        if movie is None:
+            raise KeyError(f"Movie {movie_id} not found")
+        return movie
 
     def _build_profile_weights(self, user: UserRecord) -> Counter[str]:
         weights: Counter[str] = Counter()
@@ -148,35 +148,35 @@ class RecommendationService:
             canonical_preference = TAG_ALIASES.get(normalized_preference, normalized_preference)
             weights[canonical_preference] += 2.0 if canonical_preference != normalized_preference else 1.0
 
-        for item_id, rating in user.ratings.items():
-            item = self.items.get(item_id)
-            if item is None:
+        for movie_id, rating in user.ratings.items():
+            movie = self.movies.get(movie_id)
+            if movie is None:
                 continue
             signal = rating - 3.0
             if signal == 0:
                 continue
-            for tag in item.tags:
+            for tag in movie.tags:
                 normalized_tag = normalize_text(tag)
                 canonical_tag = TAG_ALIASES.get(normalized_tag, normalized_tag)
                 weights[canonical_tag] += signal
         return weights
 
-    def _content_score(self, item: CatalogItem, profile_weights: Counter[str]) -> float:
-        normalized_item_tags = {normalize_text(tag) for tag in item.tags}
-        normalized_title = normalize_text(item.title)
+    def _content_score(self, movie: MovieRecord, profile_weights: Counter[str]) -> float:
+        normalized_movie_tags = {normalize_text(tag) for tag in movie.tags}
+        normalized_title = normalize_text(movie.title)
 
-        score = (item.average_rating / 5.0) * 2.5
-        score += min(item.rating_count, 1000) / 1000.0
+        score = (movie.average_rating / 5.0) * 2.5
+        score += min(movie.rating_count, 1000) / 1000.0
 
         for preference, weight in profile_weights.items():
-            if preference in normalized_item_tags:
+            if preference in normalized_movie_tags:
                 score += 1.8 * weight
             elif preference in normalized_title:
                 score += 0.4 * weight
 
         return score
 
-    def _collaborative_score(self, target_user: UserRecord, item_id: int) -> float:
+    def _collaborative_score(self, target_user: UserRecord, movie_id: int) -> float:
         weighted_total = 0.0
         similarity_total = 0.0
 
@@ -184,7 +184,7 @@ class RecommendationService:
             if other_user.user_id == target_user.user_id:
                 continue
 
-            rating = other_user.ratings.get(item_id)
+            rating = other_user.ratings.get(movie_id)
             if rating is None:
                 continue
 
@@ -201,15 +201,15 @@ class RecommendationService:
         return weighted_total / similarity_total
 
     def _user_similarity(self, left_user: UserRecord, right_user: UserRecord) -> float:
-        common_item_ids = set(left_user.ratings).intersection(right_user.ratings)
-        if not common_item_ids:
+        common_movie_ids = set(left_user.ratings).intersection(right_user.ratings)
+        if not common_movie_ids:
             return 0.0
 
         left_vector: list[float] = []
         right_vector: list[float] = []
-        for item_id in common_item_ids:
-            left_vector.append(left_user.ratings[item_id] - 3.0)
-            right_vector.append(right_user.ratings[item_id] - 3.0)
+        for movie_id in common_movie_ids:
+            left_vector.append(left_user.ratings[movie_id] - 3.0)
+            right_vector.append(right_user.ratings[movie_id] - 3.0)
 
         left_norm = sqrt(sum(value * value for value in left_vector))
         right_norm = sqrt(sum(value * value for value in right_vector))

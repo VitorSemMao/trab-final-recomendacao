@@ -6,7 +6,7 @@ class UserCreate(BaseModel):
     preferences: list[str] = Field(default_factory=list)
 
 
-class ItemCreate(BaseModel):
+class MovieCreate(BaseModel):
     title: str = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
 
@@ -16,7 +16,7 @@ class PreferenceUpdate(BaseModel):
 
 
 class RatingCreate(BaseModel):
-    item_id: int = Field(ge=1)
+    movie_id: int = Field(ge=1)
     rating: float = Field(ge=0, le=5)
 
 
@@ -26,14 +26,14 @@ class UserRead(BaseModel):
     preferences: list[str]
 
 
-class ItemRead(BaseModel):
+class MovieRead(BaseModel):
     id: int
     title: str
     tags: list[str]
 
 
 class RecommendationRead(BaseModel):
-    item_id: int
+    movie_id: int
     title: str
     tags: list[str]
     score: float
@@ -41,11 +41,11 @@ class RecommendationRead(BaseModel):
 
 class RatingRead(BaseModel):
     user_id: int
-    item_id: int
+    movie_id: int
     rating: float
 
 
 class DatasetRead(BaseModel):
     source: str
-    items: int
-    users: int
+    movies: int
+    registered_users: int

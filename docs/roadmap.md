@@ -21,6 +21,5 @@ Este documento resume a divisao do trabalho em blocos de 2 dias ate 22/06/2026.
 - FastAPI para criar a API.
 - Docker para containerizacao.
 - Modelo de recomendacao com dados publicos ou do professor.
-- Endpoints para usuarios, itens, recomendacoes e preferencias.
+- Endpoints para usuarios, filmes, recomendacoes e preferencias.
 - Swagger UI e testes.
-

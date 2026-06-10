@@ -9,15 +9,15 @@ Este documento resume as principais decisoes tecnicas do projeto.
 
 ## Modelo de recomendacao
 
-- A primeira fase usa filtragem baseada em conteudo, aproveitando preferencias e tags dos itens.
+- A primeira fase usa filtragem baseada em conteudo, aproveitando preferencias e tags dos filmes.
 - A etapa seguinte adiciona feedback do usuario e similaridade entre usuarios para formar uma abordagem hibrida.
 - O score final combina o componente de conteudo com o componente colaborativo em uma proporcao fixa.
 
 ## API
 
 - A API foi feita em FastAPI para aproveitar validacao, tipagem e Swagger UI automatico.
-- Os endpoints cobrem usuarios, itens, preferencias, avaliacoes e recomendacoes, conforme o PDF.
-- O endpoint `GET /dataset` ajuda na demonstracao do estado atual do sistema.
+- Os endpoints cobrem usuarios, filmes, preferencias, avaliacoes e recomendacoes, conforme o PDF.
+- O endpoint `GET /dataset` ajuda na demonstracao do estado atual do sistema, informando a origem do catalogo e os totais carregados.
 
 ## Persistencia
 
