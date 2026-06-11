@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse
 
 from .schemas import (
     DatasetRead,
@@ -16,7 +18,7 @@ from .service import RecommendationService
 
 def create_app(service: RecommendationService | None = None) -> FastAPI:
     recommender = service or RecommendationService()
-    app = FastAPI(title="Sistema de Recomendacao de Filmes", version="0.4.0")
+    app = FastAPI(title="Sistema de Recomendacao de Filmes", version="0.4.0", docs_url=None)
     app.state.recommender = recommender
 
     def as_user_read(user) -> UserRead:
@@ -45,6 +47,26 @@ def create_app(service: RecommendationService | None = None) -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/docs", include_in_schema=False)
+    def custom_swagger_ui() -> HTMLResponse:
+        response = get_swagger_ui_html(
+            openapi_url=app.openapi_url,
+            title=f"{app.title} - Swagger UI",
+        )
+        html = response.body.decode("utf-8").replace(
+            "</head>",
+            """
+    <style>
+      .swagger-ui .info .title span,
+      .swagger-ui .info a.link {
+        display: none !important;
+      }
+    </style>
+    </head>
+    """,
+        )
+        return HTMLResponse(html)
 
     @app.get("/dataset", response_model=DatasetRead)
     def dataset_info() -> DatasetRead:
