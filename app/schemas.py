@@ -30,6 +30,8 @@ class MovieRead(BaseModel):
     id: int
     title: str
     tags: list[str]
+    average_rating: float
+    rating_count: int
 
 
 class RecommendationRead(BaseModel):
@@ -37,12 +39,22 @@ class RecommendationRead(BaseModel):
     title: str
     tags: list[str]
     score: float
+    source: str
 
 
 class RatingRead(BaseModel):
     user_id: int
     movie_id: int
     rating: float
+
+
+class UserMovieRatingRead(BaseModel):
+    movie_id: int
+    title: str
+    tags: list[str]
+    rating: float
+    average_rating: float
+    rating_count: int
 
 
 class DatasetRead(BaseModel):
