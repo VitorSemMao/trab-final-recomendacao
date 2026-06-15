@@ -260,4 +260,4 @@ A validacao atual cobre:
 - sem autenticacao ou controle de sessao;
 - recomendacao baseada em tags e historico simples, sem pipeline de treinamento offline;
 - apenas usuarios, filmes criados na API e avaliacoes sao persistidos; o catalogo base continua vindo do dataset em arquivo;
-- API focada no escopo academico do trabalho.
+
