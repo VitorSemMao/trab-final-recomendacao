@@ -2,7 +2,8 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MOVIELENS_100K_DIR=/app/data/movielens-100k
+    MOVIELENS_100K_DIR=/app/data/movielens-100k \
+    RECOMMENDER_DB_PATH=/app/data/recommendation.db
 
 WORKDIR /app
 

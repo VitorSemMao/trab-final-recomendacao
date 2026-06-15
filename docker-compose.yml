@@ -3,6 +3,7 @@ services:
     build: .
     environment:
       MOVIELENS_100K_DIR: /app/data/movielens-100k
+      RECOMMENDER_DB_PATH: /app/data/recommendation.db
     ports:
       - "8000:8000"
     volumes:
