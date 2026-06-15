@@ -44,6 +44,14 @@ class MovieRecord:
             self.rating_total = self.rating_count * self.average_rating
 
 
+@dataclass(slots=True)
+class MovieRatingRecord:
+    user_id: int
+    movie_id: int
+    rating: float
+    timestamp: int
+
+
 def normalize_text(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value)
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
@@ -125,9 +133,48 @@ def _load_movielens_100k(dataset_root: Path) -> list[MovieRecord]:
     return sorted(catalog.values(), key=lambda movie: movie.movie_id)
 
 
+def _load_movielens_rating_history(dataset_root: Path) -> dict[int, list[MovieRatingRecord]]:
+    rating_path = dataset_root / "u.data"
+    history: dict[int, list[MovieRatingRecord]] = defaultdict(list)
+
+    with rating_path.open("r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            parts = raw_line.rstrip("\n").split("\t")
+            if len(parts) < 4:
+                continue
+
+            user_id = int(parts[0])
+            movie_id = int(parts[1])
+            rating = float(parts[2])
+            timestamp = int(parts[3])
+            history[user_id].append(
+                MovieRatingRecord(
+                    user_id=user_id,
+                    movie_id=movie_id,
+                    rating=rating,
+                    timestamp=timestamp,
+                )
+            )
+
+    for ratings in history.values():
+        ratings.sort(key=lambda entry: entry.timestamp)
+
+    return dict(history)
+
+
 def load_movie_catalog() -> tuple[list[MovieRecord], str]:
     dataset_root = Path(os.getenv("MOVIELENS_100K_DIR", "data/movielens-100k"))
     resolved_root = _find_movielens_root(dataset_root)
     if resolved_root is not None:
         return _load_movielens_100k(resolved_root), f"MovieLens 100K ({resolved_root.as_posix()})"
     return _fallback_movies(), "Fallback sample"
+
+
+def load_movielens_rating_history() -> tuple[dict[int, list[MovieRatingRecord]], str]:
+    dataset_root = Path(os.getenv("MOVIELENS_100K_DIR", "data/movielens-100k"))
+    resolved_root = _find_movielens_root(dataset_root)
+    if resolved_root is None:
+        raise FileNotFoundError(
+            "MovieLens 100K nao encontrado. Rode scripts/download_movielens_100k.py antes da avaliacao."
+        )
+    return _load_movielens_rating_history(resolved_root), f"MovieLens 100K ({resolved_root.as_posix()})"
